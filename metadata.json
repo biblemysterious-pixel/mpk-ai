@@ -1,0 +1,6 @@
+{
+  "name": "MPK AI",
+  "description": "MPK AI - Your AI. Your World. Modern, fast and intelligent AI assistant powered by Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
