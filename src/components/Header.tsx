@@ -1,6 +1,6 @@
 import React from 'react';
-import { Menu, Plus, Settings2, Trash2, Sparkles } from 'lucide-react';
-import { AppSettings } from '../types';
+import { Menu, Plus, Settings2, Trash2, Sparkles, MessageSquare, Image as ImageIcon, Video } from 'lucide-react';
+import { AppSettings, AppMode } from '../types';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -10,6 +10,8 @@ interface HeaderProps {
   hasMessages: boolean;
   settings: AppSettings;
   conversationTitle?: string;
+  currentMode: AppMode;
+  onSelectMode: (mode: AppMode) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,6 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   hasMessages,
   settings,
   conversationTitle,
+  currentMode,
+  onSelectMode,
 }) => {
   return (
     <header className="h-14 sm:h-16 border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between sticky top-0 z-20">
@@ -47,21 +51,70 @@ export const Header: React.FC<HeaderProps> = ({
                 Your AI. Your World.
               </span>
             </div>
-            {conversationTitle ? (
-              <span className="text-[11px] text-neutral-400 truncate max-w-[140px] sm:max-w-xs">
-                {conversationTitle}
-              </span>
+            {currentMode === 'chat' ? (
+              conversationTitle ? (
+                <span className="text-[11px] text-neutral-400 truncate max-w-[130px] sm:max-w-xs">
+                  {conversationTitle}
+                </span>
+              ) : (
+                <span className="text-[11px] text-neutral-400 sm:hidden">
+                  Your AI. Your World.
+                </span>
+              )
+            ) : currentMode === 'image' ? (
+              <span className="text-[11px] text-indigo-400 font-medium">Image Studio (Free)</span>
             ) : (
-              <span className="text-[11px] text-neutral-400 sm:hidden">
-                Your AI. Your World.
-              </span>
+              <span className="text-[11px] text-amber-400 font-medium">Video Studio (Unavailable)</span>
             )}
           </div>
         </div>
       </div>
 
+      {/* Mode Switcher Tabs */}
+      <div className="hidden md:flex items-center bg-neutral-900/90 border border-neutral-800 p-1 rounded-xl">
+        <button
+          onClick={() => onSelectMode('chat')}
+          type="button"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+            currentMode === 'chat'
+              ? 'bg-neutral-800 text-white shadow-xs'
+              : 'text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Chat</span>
+        </button>
+
+        <button
+          onClick={() => onSelectMode('image')}
+          type="button"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+            currentMode === 'image'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          <ImageIcon className="w-3.5 h-3.5 text-indigo-400 group-hover:text-white" />
+          <span>Image Generator</span>
+        </button>
+
+        <button
+          onClick={() => onSelectMode('video')}
+          type="button"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+            currentMode === 'video'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          <Video className="w-3.5 h-3.5 text-amber-400" />
+          <span>Video Generator</span>
+        </button>
+      </div>
+
+      {/* Right Actions */}
       <div className="flex items-center gap-1 sm:gap-2">
-        {hasMessages && (
+        {currentMode === 'chat' && hasMessages && (
           <button
             onClick={onClearCurrentChat}
             type="button"
@@ -73,16 +126,18 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        <button
-          onClick={onNewChat}
-          type="button"
-          title="New conversation"
-          aria-label="New conversation"
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-neutral-200 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-lg hover:border-neutral-700 transition-colors shadow-sm cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="hidden sm:inline">New Chat</span>
-        </button>
+        {currentMode === 'chat' && (
+          <button
+            onClick={onNewChat}
+            type="button"
+            title="New conversation"
+            aria-label="New conversation"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-neutral-200 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-lg hover:border-neutral-700 transition-colors shadow-sm cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">New Chat</span>
+          </button>
+        )}
 
         <button
           onClick={onOpenSettings}

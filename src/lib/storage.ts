@@ -1,9 +1,10 @@
-import { Conversation, AppSettings } from '../types';
+import { Conversation, AppSettings, GeneratedImage } from '../types';
 
 const STORAGE_KEYS = {
   CONVERSATIONS: 'mpk_ai_conversations_v1',
   ACTIVE_CHAT_ID: 'mpk_ai_active_chat_id',
   SETTINGS: 'mpk_ai_settings_v1',
+  IMAGES: 'mpk_ai_generated_images_v1',
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -88,3 +89,35 @@ export function generateTitleFromPrompt(prompt: string): string {
   if (cleaned.length <= 36) return cleaned;
   return cleaned.slice(0, 35).trim() + '...';
 }
+
+export function loadStoredImages(): GeneratedImage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.IMAGES);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return [];
+  } catch (e) {
+    console.error('Failed to load images from localStorage:', e);
+    return [];
+  }
+}
+
+export function saveStoredImages(images: GeneratedImage[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.IMAGES, JSON.stringify(images));
+  } catch (e) {
+    console.error('Failed to save images to localStorage:', e);
+  }
+}
+
+export function clearStoredImages(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.IMAGES);
+  } catch (e) {
+    console.error('Failed to clear images:', e);
+  }
+}
+

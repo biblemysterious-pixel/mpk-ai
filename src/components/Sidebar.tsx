@@ -11,8 +11,10 @@ import {
   ChevronLeft,
   ShieldCheck,
   Search,
+  Image as ImageIcon,
+  Video,
 } from 'lucide-react';
-import { Conversation } from '../types';
+import { Conversation, AppMode } from '../types';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,6 +26,8 @@ interface SidebarProps {
   onRenameConversation: (id: string, newTitle: string) => void;
   onDeleteConversation: (id: string) => void;
   onOpenSettings: () => void;
+  currentMode: AppMode;
+  onSelectMode: (mode: AppMode) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,6 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRenameConversation,
   onDeleteConversation,
   onOpenSettings,
+  currentMode,
+  onSelectMode,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -112,17 +118,88 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* New Chat Action */}
+        {/* Studio Modes Navigation */}
+        <div className="p-3 border-b border-neutral-850/60 space-y-1">
+          <div className="px-2 py-0.5 text-[10px] font-semibold tracking-wider text-neutral-400 uppercase">
+            Workspaces
+          </div>
+
+          <button
+            onClick={() => {
+              onSelectMode('chat');
+              if (window.innerWidth < 1024) onClose();
+            }}
+            type="button"
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              currentMode === 'chat'
+                ? 'bg-neutral-850 text-white font-semibold border border-neutral-750'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <MessageSquare className={`w-4 h-4 ${currentMode === 'chat' ? 'text-indigo-400' : 'text-neutral-500'}`} />
+              <span>AI Chat</span>
+            </div>
+            <span className="text-[10px] text-neutral-400 font-mono">Gemini</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectMode('image');
+              if (window.innerWidth < 1024) onClose();
+            }}
+            type="button"
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              currentMode === 'image'
+                ? 'bg-indigo-950/50 text-white font-semibold border border-indigo-700/50'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <ImageIcon className={`w-4 h-4 ${currentMode === 'image' ? 'text-indigo-400' : 'text-neutral-500'}`} />
+              <span>Image Generator</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 font-medium">
+              Free
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectMode('video');
+              if (window.innerWidth < 1024) onClose();
+            }}
+            type="button"
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              currentMode === 'video'
+                ? 'bg-amber-950/40 text-white font-semibold border border-amber-700/50'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Video className={`w-4 h-4 ${currentMode === 'video' ? 'text-amber-400' : 'text-neutral-500'}`} />
+              <span>Video Generator</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400 font-medium">
+              Unavailable
+            </span>
+          </button>
+        </div>
+
+        {/* New Chat Action (Shown in Chat mode) */}
         <div className="p-3">
           <button
             onClick={() => {
+              if (currentMode !== 'chat') {
+                onSelectMode('chat');
+              }
               onNewChat();
               if (window.innerWidth < 1024) onClose();
             }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>New Conversation</span>
+            <span>New Chat</span>
           </button>
 
           {/* Search filter if more than 3 chats */}
@@ -142,25 +219,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1">
-          <div className="px-2 py-1 text-[11px] font-semibold tracking-wider text-neutral-500 uppercase">
-            Conversations
+          <div className="px-2 py-1 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase flex items-center justify-between">
+            <span>Conversations</span>
+            <span className="text-[10px] text-neutral-400">({conversations.length})</span>
           </div>
 
           {filteredConversations.length === 0 ? (
-            <div className="text-center py-8 px-4 text-neutral-500 text-xs">
+            <div className="text-center py-8 px-4 text-neutral-400 text-xs">
               {conversations.length === 0
                 ? 'No past conversations yet. Start a new chat!'
                 : 'No conversations match your search.'}
             </div>
           ) : (
             filteredConversations.map((conv) => {
-              const isActive = conv.id === activeId;
+              const isActive = conv.id === activeId && currentMode === 'chat';
               const isEditing = editingId === conv.id;
 
               return (
                 <div
                   key={conv.id}
                   onClick={() => {
+                    if (currentMode !== 'chat') {
+                      onSelectMode('chat');
+                    }
                     onSelectConversation(conv.id);
                     if (window.innerWidth < 1024) onClose();
                   }}
@@ -241,7 +322,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Private & Local</span>
             </span>
-            <span className="text-[10px] text-neutral-400">Gemini 3.8</span>
+            <span className="text-[10px] text-neutral-400">Zero Billing</span>
           </div>
 
           <button

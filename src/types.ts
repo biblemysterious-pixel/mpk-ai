@@ -26,3 +26,16 @@ export interface AppSettings {
   languagePreference: LanguagePreference;
   fontSize: FontSizePreference;
 }
+
+export type AppMode = 'chat' | 'image' | 'video';
+
+export interface GeneratedImage {
+  id: string;
+  prompt: string;
+  enhancedPrompt?: string;
+  url: string;
+  aspectRatio: '1:1' | '16:9' | '9:16' | '4:3';
+  style: string;
+  seed: number;
+  createdAt: number;
+}

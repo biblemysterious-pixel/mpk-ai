@@ -9,13 +9,15 @@ import {
   clearAllConversations,
   generateTitleFromPrompt,
 } from './lib/storage';
-import { Conversation, Message, AppSettings } from './types';
+import { Conversation, Message, AppSettings, AppMode } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { EmptyState } from './components/EmptyState';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 import { SettingsModal } from './components/SettingsModal';
+import { ImageGenerator } from './components/ImageGenerator';
+import { VideoGenerator } from './components/VideoGenerator';
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(() =>
@@ -23,6 +25,7 @@ export default function App() {
   );
   const [activeId, setActiveId] = useState<string | null>(() => loadActiveChatId());
   const [settings, setSettings] = useState<AppSettings>(() => loadAppSettings());
+  const [currentMode, setCurrentMode] = useState<AppMode>('chat');
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -103,6 +106,7 @@ export default function App() {
       abortControllerRef.current.abort();
       setIsStreaming(false);
     }
+    setCurrentMode('chat');
     setActiveId(null);
     setInput('');
     userScrolledUpRef.current = false;
@@ -113,6 +117,7 @@ export default function App() {
       abortControllerRef.current.abort();
       setIsStreaming(false);
     }
+    setCurrentMode('chat');
     setActiveId(id);
     userScrolledUpRef.current = false;
     setTimeout(() => scrollToBottom(true), 50);
@@ -430,9 +435,11 @@ export default function App() {
         onRenameConversation={handleRenameConversation}
         onDeleteConversation={handleDeleteConversation}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        currentMode={currentMode}
+        onSelectMode={setCurrentMode}
       />
 
-      {/* Main Chat Area */}
+      {/* Main Workspace Area */}
       <main className="flex-1 flex flex-col h-full min-w-0 relative bg-neutral-950">
         {/* Header */}
         <Header
@@ -443,43 +450,54 @@ export default function App() {
           hasMessages={Boolean(activeConversation && activeConversation.messages.length > 0)}
           settings={settings}
           conversationTitle={activeConversation?.title}
+          currentMode={currentMode}
+          onSelectMode={setCurrentMode}
         />
 
-        {/* Messages or Empty State */}
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto flex flex-col select-text"
-        >
-          {!activeConversation || activeConversation.messages.length === 0 ? (
-            <EmptyState onSelectPrompt={(promptText) => handleSendMessage(promptText)} />
-          ) : (
-            <div className="py-4 space-y-1">
-              {activeConversation.messages.map((msg, index) => {
-                const isLast = index === activeConversation.messages.length - 1;
-                return (
-                  <ChatMessage
-                    key={msg.id}
-                    message={msg}
-                    isLast={isLast}
-                    isStreaming={msg.isStreaming}
-                    onRegenerate={isLast && msg.role === 'model' ? handleRegenerate : undefined}
-                  />
-                );
-              })}
-              <div ref={messagesEndRef} className="h-4" />
+        {/* View Routing */}
+        {currentMode === 'image' ? (
+          <ImageGenerator />
+        ) : currentMode === 'video' ? (
+          <VideoGenerator />
+        ) : (
+          <>
+            {/* Messages or Empty State */}
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto flex flex-col select-text"
+            >
+              {!activeConversation || activeConversation.messages.length === 0 ? (
+                <EmptyState onSelectPrompt={(promptText) => handleSendMessage(promptText)} />
+              ) : (
+                <div className="py-4 space-y-1">
+                  {activeConversation.messages.map((msg, index) => {
+                    const isLast = index === activeConversation.messages.length - 1;
+                    return (
+                      <ChatMessage
+                        key={msg.id}
+                        message={msg}
+                        isLast={isLast}
+                        isStreaming={msg.isStreaming}
+                        onRegenerate={isLast && msg.role === 'model' ? handleRegenerate : undefined}
+                      />
+                    );
+                  })}
+                  <div ref={messagesEndRef} className="h-4" />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Input Bar */}
-        <ChatInput
-          input={input}
-          setInput={setInput}
-          onSend={() => handleSendMessage()}
-          onStop={handleStopGeneration}
-          isStreaming={isStreaming}
-        />
+            {/* Input Bar */}
+            <ChatInput
+              input={input}
+              setInput={setInput}
+              onSend={() => handleSendMessage()}
+              onStop={handleStopGeneration}
+              isStreaming={isStreaming}
+            />
+          </>
+        )}
       </main>
 
       {/* Settings Modal */}

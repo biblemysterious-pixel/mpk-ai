@@ -25,6 +25,120 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Free Image generation endpoint using free Pollinations.ai API
+app.post('/api/generate-image', (req, res) => {
+  const { prompt, aspectRatio = '1:1', style = 'none', seed } = req.body;
+
+  if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+    res.status(400).json({ error: 'A text prompt is required for image generation.' });
+    return;
+  }
+
+  const cleanPrompt = prompt.trim();
+  const imageSeed = typeof seed === 'number' && Number.isInteger(seed) ? seed : Math.floor(Math.random() * 10000000);
+
+  // Aspect ratio to resolution mapping
+  let width = 1024;
+  let height = 1024;
+  if (aspectRatio === '16:9') {
+    width = 1280;
+    height = 720;
+  } else if (aspectRatio === '9:16') {
+    width = 720;
+    height = 1280;
+  } else if (aspectRatio === '4:3') {
+    width = 1024;
+    height = 768;
+  }
+
+  // Style prompt enhancer
+  let styleSuffix = '';
+  switch (style) {
+    case 'photorealistic':
+      styleSuffix = ', ultra-realistic photography, 8k resolution, detailed lighting, Hasselblad photo';
+      break;
+    case 'cinematic':
+      styleSuffix = ', cinematic film still, anamorphic lens, dramatic lighting, color graded, 35mm';
+      break;
+    case 'anime':
+      styleSuffix = ', anime key visual style, Studio Ghibli and Makoto Shinkai aesthetic, vibrant colors';
+      break;
+    case '3d':
+      styleSuffix = ', 3D digital render, Unreal Engine 5, Octane render, ray tracing, volumetric lighting';
+      break;
+    case 'cyberpunk':
+      styleSuffix = ', cyberpunk aesthetic, neon glow, futuristic city atmosphere, high-tech dark details';
+      break;
+    case 'watercolor':
+      styleSuffix = ', expressive watercolor painting, textured paper, soft paint splashes, artistic strokes';
+      break;
+    case 'fantasy':
+      styleSuffix = ', high fantasy epic illustration, mythical atmosphere, magical glow, intricate details';
+      break;
+    case 'minimalist':
+      styleSuffix = ', minimalist modern vector art, clean composition, elegant colors, bold negative space';
+      break;
+    default:
+      styleSuffix = '';
+  }
+
+  const enhancedPrompt = `${cleanPrompt}${styleSuffix}`;
+  const encodedPrompt = encodeURIComponent(enhancedPrompt);
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${imageSeed}&nologo=true`;
+
+  res.json({
+    success: true,
+    url: imageUrl,
+    prompt: cleanPrompt,
+    enhancedPrompt,
+    aspectRatio,
+    style,
+    seed: imageSeed,
+    width,
+    height,
+    provider: 'Pollinations.ai (Free)',
+  });
+});
+
+// Video generation status endpoint - clearly marks generation as unavailable
+app.get('/api/video-status', (_req, res) => {
+  res.json({
+    available: false,
+    configured: false,
+    statusText: 'Generation Unavailable',
+    message: 'No free video generation API is configured. Video generation models require metered GPU compute and are currently disabled to prevent unauthorized charges.',
+  });
+});
+
+// Endpoint to force direct file download on mobile and desktop
+app.get('/api/download-image', async (req, res) => {
+  const imageUrl = req.query.url as string;
+  const rawFileName = (req.query.filename as string) || 'mpk-ai-artwork.jpg';
+  const fileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    res.status(400).send('Image URL is required');
+    return;
+  }
+
+  try {
+    const upstream = await fetch(imageUrl);
+    if (!upstream.ok) {
+      res.status(upstream.status).send('Unable to retrieve image from source');
+      return;
+    }
+    const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const arrayBuffer = await upstream.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    console.error('Error proxying image download:', err);
+    res.status(500).send('Failed to download image');
+  }
+});
+
 // Chat endpoint supporting Server-Sent Events (SSE) streaming
 app.post('/api/chat', async (req, res) => {
   console.log('[MPK AI Server] Received /api/chat request');
